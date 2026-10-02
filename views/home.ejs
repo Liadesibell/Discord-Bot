@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="tr">
+<head><%- include('partials/head', { title: 'Control Center' }) %></head>
+<body class="landing">
+	<canvas class="ambient-canvas" aria-hidden="true"></canvas>
+	<div class="noise" aria-hidden="true"></div>
+	<header class="landing-nav"><a class="brand" href="/"><span>CC</span> CONTROL CENTER</a><span class="nav-code">DISCORD / OPS 01</span></header>
+	<main class="hero reveal">
+		<div class="hero-orbit orbit-one"></div><div class="hero-orbit orbit-two"></div>
+		<div class="eyebrow">DISCORD OPERATIONS / 01</div>
+		<h1>Sunucunun kontrolü<br><em>tek merkezde.</em></h1>
+		<p>Kanal yönetimi, davet akışları ve sunucu içi ticket desteği için sakin, güçlü bir kontrol yüzeyi.</p>
+		<div class="hero-actions"><a class="button primary" href="/auth/login">Discord ile giriş yap <span>→</span></a><span class="action-note">Güvenli OAuth2 erişimi</span></div>
+		<div class="status"><span class="pulse <%= botReady ? 'online' : '' %>"></span><%= botReady ? 'Bot bağlantısı aktif' : 'Bot bağlantısı bekleniyor' %><span class="status-line"></span><span>Yerel ağ</span></div>
+	</main>
+	<aside class="landing-note"><span>CC</span><p>Discord sunucunu düzenli tut.<br>İşleri hızlandır.</p><b>SCROLL TO ENTER ↓</b></aside>
+	<div class="corner-label">CONTROL<br>WITHOUT CLUTTER</div>
+</body>
+</html>
