@@ -21,6 +21,7 @@ const missing = required.filter((name) => !process.env[name]);
 if (missing.length) console.warn(`Eksik .env değişkenleri: ${missing.join(', ')}`);
 
 const client = new Client({
+  presence: { status: 'idle' },
   intents: [
     GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.MessageContent
