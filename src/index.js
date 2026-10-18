@@ -29,6 +29,7 @@ const client = new Client({
 const app = express();
 const port = Number(process.env.PORT || 3000);
 const defaultCategoryName = process.env.TICKET_CATEGORY_NAME || 'Tickets';
+const logoAttachmentPath = path.join(__dirname, '..', 'public', 'orlin-mark.png');
 
 app.set('trust proxy', 1);
 app.set('view engine', 'ejs');
@@ -72,6 +73,13 @@ function isModerator(interaction) {
   return interaction.memberPermissions?.has(PermissionFlagsBits.ManageMessages) || interaction.memberPermissions?.has(PermissionFlagsBits.ManageChannels) || hasConfiguredRole || isOwner(interaction);
 }
 function deny(interaction, text) { return interaction.reply({ content: `Bu işlem için yetkin yok. ${text || ''}`, flags: MessageFlags.Ephemeral }); }
+function brandedMessage(payload) {
+  return {
+    ...payload,
+    embeds: payload.embeds.map((embed) => embed.setThumbnail('attachment://orlin-mark.png')),
+    files: [...(payload.files || []), new AttachmentBuilder(logoAttachmentPath, { name: 'orlin-mark.png' })]
+  };
+}
 async function checkModerationTarget(interaction, target) {
   if (!isModerator(interaction)) return 'Bu işlem için moderatör yetkisi gerekiyor.';
   if (target.id === interaction.guild.ownerId) return 'Sunucu sahibine bu işlem uygulanamaz.';
@@ -93,12 +101,12 @@ function auditReason(interaction, reason) {
 }
 function settingsFor(guild) { return { categoryId: null, categoryName: defaultCategoryName, moderatorRoleId: process.env.TICKET_SUPPORT_ROLE_ID || null, ticketRoleId: null, welcomeChannelId: null, goodbyeChannelId: null, goodbyeMessage: 'Yolun açık olsun, {takma_ad}!', moderationLogChannelId: null, autoRoleId: null, vanityAllowedRoleIds: [], ...getSettings(guild.id) }; }
 function helpEmbed() {
-  return new EmbedBuilder().setColor(0x5865f2).setTitle('Kontrol Merkezi').setDescription('Aşağıdaki menüden komut grubunu seç veya doğrudan slash komutlarını kullan.').addFields(
+  return new EmbedBuilder().setColor(0xffc000).setTitle('Kontrol Merkezi').setDescription('Aşağıdaki menüden komut grubunu seç veya doğrudan slash komutlarını kullan.').addFields(
     { name: 'Ticket', value: '`/ticket` veya `/ticket-panel` panel gönderir\n`/ticket-kapat` açık ticketı kapatır\n`/ticket-ekle` kullanıcı ekler\n`/ticket-cikar` kullanıcı çıkarır' },
     { name: 'Moderasyon', value: '`/timeout` ve `/timeout-kaldir`\n`/ban`, `/ban-kaldir` (kullanici_id), `/kick`\n`/ses-sustur`, `/ses-susturma-kaldir`\n`/sagirlestir`, `/sagirliligi-kaldir`\n`/sil`, `/kanal-sil`, rol ve kategori işlemleri' },
     { name: 'Sunucu ayarları', value: '`/ayar kategori` ticket kategorisi\n`/ayar destek-rolu` moderatör rolü\n`/ayar ticket-rolu` ticket açan rolü\n`/ayar hosgeldin` ve `/ayar ayrilma` kanalları\n`/ayar ayrilma-mesaji` ayrılış afişi metni\nMesajlarda `{kullanici}`, `{takma_ad}`, `{sunucu}`, `{uye_sayisi}` kullanılabilir.\n`/ayar moderasyon-logu` işlem kayıt kanalı\n`/ayar otomatik-rol` yeni üyeye rol\n`/ayar vanity-rol-ekle` URL değiştirme izni\n`/ayar vanity-rol-cikar` URL iznini kaldırır\nWeb panelinden giriş/çıkış ve moderasyon log kanallarını da seçebilirsin.' },
     { name: 'Bilgi', value: '`/sunucu-bilgi` sunucu bilgisi\n`/panel` web paneli\n`/yardim` bu menü' }
-  ).setFooter({ text: 'Yetki ayarlarını yalnızca sunucu sahibi yapabilir.' });
+  ).setFooter({ text: 'ORLIN • Yetki ayarlarını yalnızca sunucu sahibi yapabilir.' });
 }
 function helpComponents() {
   return [new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('help-menu').setPlaceholder('Komut grubunu seç').addOptions(
@@ -116,7 +124,7 @@ function ticketCreationModal() {
   );
 }
 function mainPanelComponents() { return [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('panel-ticket').setLabel('Ticket paneli').setStyle(ButtonStyle.Primary).setEmoji('🎫'), new ButtonBuilder().setCustomId('panel-help').setLabel('Komutlar').setStyle(ButtonStyle.Secondary).setEmoji('📚'))]; }
-function ticketEmbed() { return new EmbedBuilder().setColor(0x57f287).setTitle('Destek Merkezi').setDescription('Destek talebi oluşturmak için aşağıdaki düğmeye bas. Kısa bir konu ve açıklama istenecek; ekibimiz yalnızca senin ve yetkililerin görebildiği bir ticket kanalı açacak.'); }
+function ticketEmbed() { return new EmbedBuilder().setColor(0xffc000).setTitle('Destek Merkezi').setDescription('Destek talebi oluşturmak için aşağıdaki düğmeye bas. Kısa bir konu ve açıklama istenecek; ekibimiz yalnızca senin ve yetkililerin görebildiği bir ticket kanalı açacak.'); }
 function escapeXml(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;'
@@ -159,7 +167,7 @@ function welcomeMessageFor(member, joined) {
   })[token] || key);
 }
 function neonWelcomeCard(member, joined, message) {
-  const accent = joined ? '#62f2c1' : '#ff8f83';
+  const accent = joined ? '#ffc000' : '#ff8f83';
   const username = escapeXml(member.user.username.slice(0, 40));
   const nickname = escapeXml(member.displayName.slice(0, 40));
   const guildName = escapeXml(member.guild.name.slice(0, 42));
@@ -171,6 +179,7 @@ function neonWelcomeCard(member, joined, message) {
 }
 async function neonWelcomeImage(member, joined, message) {
   const card = await sharp(Buffer.from(neonWelcomeCard(member, joined, message))).png().toBuffer();
+  const logo = await sharp(logoAttachmentPath).resize(96, 96).png().toBuffer();
   const avatarMask = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><circle cx="150" cy="150" r="150" fill="white"/></svg>');
   let avatar;
   try {
@@ -188,7 +197,7 @@ async function neonWelcomeImage(member, joined, message) {
       .png()
       .toBuffer();
   }
-  return sharp(card).composite([{ input: avatar, left: 965, top: 160 }]).png().toBuffer();
+  return sharp(card).composite([{ input: avatar, left: 965, top: 160 }, { input: logo, left: 1270, top: 30 }]).png().toBuffer();
 }
 async function logModerationAction(guild, actor, action, details) {
   const channelId = settingsFor(guild).moderationLogChannelId;
@@ -202,7 +211,7 @@ async function logModerationAction(guild, actor, action, details) {
     return;
   }
   const embed = new EmbedBuilder()
-    .setColor(0xff8966)
+    .setColor(0xffc000)
     .setTitle('Moderasyon işlemi')
     .addFields(
       { name: 'İşlem', value: action, inline: true },
@@ -210,7 +219,7 @@ async function logModerationAction(guild, actor, action, details) {
       { name: 'Detay', value: String(details).slice(0, 1024) || 'Detay belirtilmedi.' }
     )
     .setTimestamp();
-  await channel.send({ embeds: [embed] }).catch((error) => {
+  await channel.send(brandedMessage({ embeds: [embed] })).catch((error) => {
     console.error(`Moderasyon işlemi loglanamadı (${guild.name}):`, error.message);
   });
 }
@@ -337,12 +346,12 @@ async function createTicket(guild, user, subject, details) {
     const member = await guild.members.fetch(user.id).catch(() => null);
     if (member) await member.roles.add(ticketRole).catch((error) => console.error('Ticket rolü verilemedi:', error.message));
   }
-  const embed = new EmbedBuilder().setColor(0x5865f2).setTitle(`Ticket #${number} · ${subject}`)
+  const embed = new EmbedBuilder().setColor(0xffc000).setTitle(`Ticket #${number} · ${subject}`)
     .setDescription(details)
     .addFields({ name: 'Açan', value: `<@${user.id}>`, inline: true }, { name: 'Durum', value: 'Açık', inline: true })
     .setTimestamp();
   try {
-    await channel.send({ content: `<@${user.id}>`, embeds: [embed], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('ticket-close').setLabel('Ticket kapat').setStyle(ButtonStyle.Danger).setEmoji('🔒'))] });
+    await channel.send(brandedMessage({ content: `<@${user.id}>`, embeds: [embed], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('ticket-close').setLabel('Ticket kapat').setStyle(ButtonStyle.Danger).setEmoji('🔒'))] }));
   } catch (error) {
     await channel.delete('Ticket kurulumu tamamlanamadı').catch((deleteError) => console.error('Kurulamayan ticket kanalı silinemedi:', deleteError.message));
     throw error;
@@ -557,8 +566,8 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ content: descriptions[interaction.values[0]], flags: MessageFlags.Ephemeral });
     }
     if (interaction.isButton()) {
-      if (interaction.customId === 'panel-ticket') return interaction.reply({ embeds: [ticketEmbed()], components: ticketPanelComponents(), flags: MessageFlags.Ephemeral });
-      if (interaction.customId === 'panel-help') return interaction.reply({ embeds: [helpEmbed()], components: helpComponents(), flags: MessageFlags.Ephemeral });
+      if (interaction.customId === 'panel-ticket') return interaction.reply(brandedMessage({ embeds: [ticketEmbed()], components: ticketPanelComponents(), flags: MessageFlags.Ephemeral }));
+      if (interaction.customId === 'panel-help') return interaction.reply(brandedMessage({ embeds: [helpEmbed()], components: helpComponents(), flags: MessageFlags.Ephemeral }));
       if (interaction.customId === 'ticket-open') {
         const existing = findOpenTicket(interaction.guild.id, interaction.user.id);
         if (existing) {
@@ -578,13 +587,13 @@ client.on('interactionCreate', async (interaction) => {
     if (!interaction.isChatInputCommand()) return;
     const { commandName } = interaction;
     if (commandName === 'yardim') {
-      await interaction.reply({ embeds: [helpEmbed()], components: helpComponents() });
+      await interaction.reply(brandedMessage({ embeds: [helpEmbed()], components: helpComponents() }));
       if (interaction.guild) await syncSlashCommands([interaction.guild]);
       return;
     }
-    if (commandName === 'panel') return interaction.reply({ embeds: [new EmbedBuilder().setColor(0x5865f2).setTitle('Sunucu Kontrol Paneli').setDescription('Ticket oluşturma paneline ve tüm komut listesine buradan erişebilirsin.')], components: mainPanelComponents() });
-    if (commandName === 'ticket') return interaction.reply({ embeds: [ticketEmbed()], components: ticketPanelComponents() });
-    if (commandName === 'ticket-panel') { if (!isModerator(interaction)) return deny(interaction); return interaction.reply({ embeds: [ticketEmbed()], components: ticketPanelComponents() }); }
+    if (commandName === 'panel') return interaction.reply(brandedMessage({ embeds: [new EmbedBuilder().setColor(0xffc000).setTitle('Orlin Sunucu Kontrol Paneli').setDescription('Ticket oluşturma paneline ve tüm komut listesine buradan erişebilirsin.')], components: mainPanelComponents() }));
+    if (commandName === 'ticket') return interaction.reply(brandedMessage({ embeds: [ticketEmbed()], components: ticketPanelComponents() }));
+    if (commandName === 'ticket-panel') { if (!isModerator(interaction)) return deny(interaction); return interaction.reply(brandedMessage({ embeds: [ticketEmbed()], components: ticketPanelComponents() })); }
     if (commandName === 'ticket-kapat') { if (!interaction.channel.topic?.startsWith('Ticket #')) return interaction.reply({ content: 'Bu kanal bir ticket kanalı değil.', flags: MessageFlags.Ephemeral }); if (!isModerator(interaction) && !interaction.channel.topic.includes(`(${interaction.user.id})`)) return deny(interaction); await interaction.reply('Ticket kapatılıyor...'); return closeTicketChannel(interaction.channel, interaction.user); }
     if (commandName === 'ticket-ekle' || commandName === 'ticket-cikar') { if (!isModerator(interaction) || !interaction.channel.topic?.startsWith('Ticket #')) return deny(interaction, 'Bu komut ticket moderatörleri içindir.'); const user = interaction.options.getUser('kullanici'); const allow = commandName === 'ticket-ekle'; await interaction.channel.permissionOverwrites.edit(user.id, allow ? { ViewChannel: true, SendMessages: true, ReadMessageHistory: true } : { ViewChannel: false }); await logModerationAction(interaction.guild, interaction.user, allow ? 'Ticketa kullanıcı eklendi' : 'Tickettan kullanıcı çıkarıldı', `Kullanıcı: ${user.tag} (\`${user.id}\`), kanal: #${interaction.channel.name}`); return interaction.reply(`${user} ticketa ${allow ? 'eklendi' : 'çıkarıldı'}.`); }
     if (commandName === 'ban-kaldir') {
@@ -731,7 +740,7 @@ client.on('interactionCreate', async (interaction) => {
       await logModerationAction(interaction.guild, interaction.user, 'Sunucu ayarını güncelleme', `Ayar: ${sub}`);
       return interaction.reply(`✅ ${sub} ayarı kaydedildi.`);
     }
-    if (commandName === 'sunucu-bilgi') return interaction.reply({ embeds: [new EmbedBuilder().setColor(0x5865f2).setTitle(interaction.guild.name).addFields({ name: 'Üye', value: String(interaction.guild.memberCount), inline: true }, { name: 'Kanal', value: String(interaction.guild.channels.cache.size), inline: true }, { name: 'Rol', value: String(interaction.guild.roles.cache.size), inline: true })] });
+    if (commandName === 'sunucu-bilgi') return interaction.reply(brandedMessage({ embeds: [new EmbedBuilder().setColor(0xffc000).setTitle(interaction.guild.name).addFields({ name: 'Üye', value: String(interaction.guild.memberCount), inline: true }, { name: 'Kanal', value: String(interaction.guild.channels.cache.size), inline: true }, { name: 'Rol', value: String(interaction.guild.roles.cache.size), inline: true })] }));
   } catch (error) {
     console.error('Etkileşim hatası:', error);
     const message = error?.code === 50013 ? 'Botun bu işlem için gerekli Discord izni yok. Bot rolü ve kanal izinlerini kontrol et.' : 'İşlem sırasında bir hata oluştu. Ayrıntı için VDS ekranındaki PM2 kayıtlarına bak.';
@@ -742,7 +751,7 @@ client.on('interactionCreate', async (interaction) => {
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   if (['help', '!help', 'yardim', '!yardim'].includes(message.content.toLowerCase().trim())) {
-    await message.reply({ embeds: [helpEmbed()], components: helpComponents() });
+    await message.reply(brandedMessage({ embeds: [helpEmbed()], components: helpComponents() }));
     if (message.guild) await syncSlashCommands([message.guild]);
     return;
   }
